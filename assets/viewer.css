@@ -204,9 +204,13 @@ model-viewer {
   box-shadow: var(--ombra);
 }
 
-.nota:hover .nota-testo,
 .nota:focus-visible .nota-testo,
 .nota.aperta .nota-testo { display: block; }
+
+/* Solo col mouse: sui telefoni l'hover resta "attaccato" dopo il tocco e il fumetto non si chiuderebbe. */
+@media (hover: hover) {
+  .nota:hover .nota-testo { display: block; }
+}
 
 .note {
   margin-top: 20px;

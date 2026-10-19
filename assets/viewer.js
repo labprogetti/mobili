@@ -67,6 +67,15 @@ function analizzaModello() {
     if (!o.isMesh && !o.isLineSegments) return;
     // Le linee non devono intercettare il doppio clic: three.js le "colpisce" anche a distanza.
     if (o.isLineSegments) o.raycast = nessunRaycast;
+    // Le facce vengono spinte appena indietro in profondità: gli spigoli, che stanno
+    // esattamente sui loro bordi, altrimenti verrebbero coperti a tratti.
+    if (o.isMesh) {
+      for (const m of [].concat(o.material)) {
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = 1;
+        m.polygonOffsetUnits = 1;
+      }
+    }
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     rel.multiplyMatrices(inversa, o.matrixWorld);
     const b = o.geometry.boundingBox.clone().applyMatrix4(rel);
@@ -171,9 +180,13 @@ const VISTE = {
   prospettiva: [35, 65],
 };
 
+// Lato mostrato da "Lato" e "Prospettiva": destro (predefinito) o sinistro di chi guarda
+// il fronte (window.LATO = "sinistra" nella pagina).
+const SPECCHIO = window.LATO === 'sinistra' ? -1 : 1;
+
 function angoliVista(nome) {
   const [theta, phi] = VISTE[nome];
-  return `${theta + FRONTE.ang}deg ${phi}deg`;
+  return `${theta * SPECCHIO + FRONTE.ang}deg ${phi}deg`;
 }
 
 // Distanza che fa stare tutto il mobile nel riquadro, con margine per le linee di quota.
@@ -199,6 +212,7 @@ function segnaVista(attivo) {
 
 bottoniVista.forEach((b) => {
   b.addEventListener('click', () => {
+    chiudiNote();
     vaiA({ orbit: orbitaVista(b.dataset.vista) });
     segnaVista(b);
   });
@@ -212,14 +226,32 @@ mv.addEventListener('camera-change', (e) => {
 // ---------- Note (hotspot) ----------
 
 const elenco = document.querySelector('#elenco-note');
+let notaAperta = null;
 
+function chiudiNote() {
+  notaAperta = null;
+  mv.querySelectorAll('.nota').forEach((el) => el.classList.remove('aperta'));
+  document.querySelectorAll('#elenco-note button').forEach((el) => el.classList.remove('attiva'));
+}
+
+// Un clic apre la nota e ci porta la camera; un secondo clic sulla stessa nota la chiude.
 function apriNota(indice) {
+  if (notaAperta === indice) {
+    chiudiNote();
+    return;
+  }
+  notaAperta = indice;
   mv.querySelectorAll('.nota').forEach((el, i) => el.classList.toggle('aperta', i === indice));
   document.querySelectorAll('#elenco-note button').forEach((el, i) => el.classList.toggle('attiva', i === indice));
   const n = NOTE[indice];
   vaiA({ target: n.position, orbit: n.orbit });
   segnaVista(null);
 }
+
+// Toccando o trascinando il modello fuori dalle note, il fumetto si chiude.
+mv.addEventListener('pointerdown', (e) => {
+  if (!e.target.closest?.('.nota')) chiudiNote();
+});
 
 NOTE.forEach((n, i) => {
   const b = document.createElement('button');

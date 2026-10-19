@@ -71,6 +71,8 @@
     // Da che parte guarda il fronte del mobile negli assi del modello: "+z" (predefinito,
     // = vista Fronte di SketchUp), "+x", "-z" o "-x". Regola viste e quote L/P.
     window.FRONTE = "-x";
+    // "Lato" e "Prospettiva" mostrano il fianco sinistro (quello libero, con l'anta della colonna).
+    window.LATO = "sinistra";
 
     // Misure scritte a mano: la colonna ha un fianco inclinato, e il rettangolo calcolato
     // in automatico risulterebbe più profondo del vero (75 cm invece di 50).
@@ -88,8 +90,9 @@
     // si ricavano col doppio clic in modalità ?autore) e testo da mostrare.
     window.QUOTE_MANUALI = [
       { testo: "112,1 cm", da: [-3.08, 0.75, 0.64], a: [-3.08, 0.75, 1.76] }, // piano scrivania, bordo davanti
-      { testo: "30 cm", da: [-2.84, 1.33, 1.20], a: [-2.54, 1.33, 1.20] },    // pensile, sotto
+      { testo: "30 cm", da: [-2.84, 1.87, 1.20], a: [-2.54, 1.87, 1.20] },    // pensile, sopra
       { testo: "50 cm", da: [-3.04, 2.48, 0.64], a: [-2.54, 2.48, 0.64] },    // colonna, in alto
+      { testo: "30 cm", da: [-3.08, 0.01, 0.343], a: [-3.08, 0.01, 0.643] },  // fronte colonna, a terra
     ];
   </script>
   <script type="module" src="../assets/viewer.js"></script>

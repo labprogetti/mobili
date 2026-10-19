@@ -56,7 +56,14 @@ window.FRONTE = "+x";   // "+z" (predefinito), "+x", "-z" o "-x"
 ```
 
 Per capire quale: apri la pagina e premi i bottoni Fronte/Lato; se il fronte vero compare
-con "Lato", è `"+x"`.
+con "Lato", è `"+x"`; se "Fronte" mostra il retro, usa il segno opposto.
+
+"Lato" e "Prospettiva" guardano il fianco destro di chi sta davanti al mobile. Per il
+sinistro (per esempio quando il destro è contro il muro):
+
+```
+window.LATO = "sinistra";
+```
 
 ## Misure scritte a mano
 

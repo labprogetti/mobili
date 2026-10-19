@@ -56,15 +56,16 @@ function leggiAccessor(indice) {
 
 // ---------- Materiale delle linee ----------
 
+// Quasi nero (valori lineari: 0.12 diventerebbe un grigio medio, invisibile contro le pareti grigie).
+const COLORE = [0.01, 0.01, 0.01, 1];
 gltf.materials ??= [];
 let materiale = gltf.materials.findIndex((m) => m.name === NOME_MATERIALE);
 if (materiale < 0) {
   materiale = gltf.materials.length;
-  gltf.materials.push({
-    name: NOME_MATERIALE,
-    pbrMetallicRoughness: { baseColorFactor: [0.12, 0.12, 0.12, 1], metallicFactor: 0, roughnessFactor: 1 },
-  });
+  gltf.materials.push({ name: NOME_MATERIALE });
 }
+// Anche su un file già trattato: aggiorna il colore.
+gltf.materials[materiale].pbrMetallicRoughness = { baseColorFactor: COLORE, metallicFactor: 0, roughnessFactor: 1 };
 
 // ---------- Calcolo degli spigoli ----------
 
