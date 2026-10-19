@@ -263,11 +263,11 @@ function aggiornaNote() {
 
 const QUOTE = ['l', 'p', 'h']; // larghezza, profondità, altezza
 
-function creaHotspot(nome, classe) {
+function creaHotspot(nome, classe, posizione = '0m 0m 0m') {
   const el = document.createElement('div');
   el.slot = `hotspot-${nome}`;
   el.className = classe;
-  el.dataset.position = '0m 0m 0m';
+  el.dataset.position = posizione;
   mv.appendChild(el);
   return el;
 }
@@ -282,6 +282,41 @@ for (const nome of QUOTE) {
 etichette.h.classList.add('quota-verticale');
 
 const linee = mv.querySelector('.linee-quote');
+const SVG = 'http://www.w3.org/2000/svg';
+
+// Frecce alle estremità delle linee di quota, come in SketchUp.
+const defs = document.createElementNS(SVG, 'defs');
+defs.innerHTML =
+  '<marker id="freccia" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">' +
+  '<path d="M0,0 L10,5 L0,10 z"/></marker>';
+linee.prepend(defs);
+
+// Linee di quota presenti: le tre automatiche più quelle scritte nella pagina.
+let nomiLinee = [...QUOTE];
+
+// Quote scritte nella pagina (window.QUOTE_MANUALI): come una quota di SketchUp,
+// due punti in metri nelle coordinate del modello e il testo da mostrare.
+const QUOTE_MANUALI = Array.isArray(window.QUOTE_MANUALI) ? window.QUOTE_MANUALI : [];
+QUOTE_MANUALI.forEach((q, i) => {
+  const nome = `m${i}`;
+  const pos = (v) => `${v[0]}m ${v[1]}m ${v[2]}m`;
+  creaHotspot(`quota-${nome}-a`, 'quota-punto', pos(q.da));
+  creaHotspot(`quota-${nome}-b`, 'quota-punto', pos(q.a));
+  creaHotspot(`quota-${nome}`, 'quota-etichetta', pos(q.da.map((v, k) => (v + q.a[k]) / 2))).textContent = q.testo;
+  const linea = document.createElementNS(SVG, 'line');
+  linea.dataset.quota = nome;
+  linee.appendChild(linea);
+  nomiLinee.push(nome);
+});
+
+// Con le misure scritte a mano (window.INGOMBRO) le quote automatiche non servono.
+function togliQuoteAutomatiche() {
+  for (const nome of QUOTE) {
+    for (const suffisso of ['-a', '-b', '']) mv.querySelector(`[slot="hotspot-quota-${nome}${suffisso}"]`)?.remove();
+    linee.querySelector(`[data-quota="${nome}"]`)?.remove();
+  }
+  nomiLinee = nomiLinee.filter((n) => !QUOTE.includes(n));
+}
 
 function cm(metri) {
   const v = Math.round(metri * 1000) / 10;
@@ -293,7 +328,7 @@ function xyz(v) {
 }
 
 function disegnaQuote() {
-  for (const nome of QUOTE) {
+  for (const nome of nomiLinee) {
     const a = mv.queryHotspot(`hotspot-quota-${nome}-a`);
     const b = mv.queryHotspot(`hotspot-quota-${nome}-b`);
     const linea = linee.querySelector(`[data-quota="${nome}"]`);
@@ -382,8 +417,8 @@ mv.addEventListener('load', () => {
     // il rettangolo calcolato sarebbe più grande del vero. Niente linee di quota 3D.
     const ingombro = document.querySelector('#ingombro');
     if (ingombro) ingombro.textContent = `Ingombro: ${window.INGOMBRO}`;
-    mv.classList.add('senza-quote');
-    interruttoreQuote?.closest('label')?.setAttribute('hidden', '');
+    togliQuoteAutomatiche();
+    if (!QUOTE_MANUALI.length) interruttoreQuote?.closest('label')?.setAttribute('hidden', '');
   } else {
     piazzaQuote();
   }

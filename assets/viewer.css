@@ -69,6 +69,9 @@ model-viewer {
   border: 1px solid var(--bordo);
   border-radius: 12px;
   --poster-color: transparent;
+  /* model-viewer attenua le etichette coperte dal modello: le quote devono restare leggibili.
+     Le note dietro il mobile le attenua viewer.js (classe .dietro). */
+  --min-hotspot-opacity: 1;
 }
 
 .barra {
@@ -245,8 +248,11 @@ model-viewer {
 .linee-quote line {
   stroke: var(--quota);
   stroke-width: 2;
-  stroke-dasharray: 6 4;
+  marker-start: url(#freccia);
+  marker-end: url(#freccia);
 }
+
+.linee-quote marker path { fill: var(--quota); }
 
 .quota-punto {
   width: 0;

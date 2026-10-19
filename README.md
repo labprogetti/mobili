@@ -68,7 +68,21 @@ rettangolo è più grande del vero. In quei casi scrivi le misure nella pagina d
 window.INGOMBRO = "L 196 × P 50 (max) × H 246 cm";
 ```
 
-La pagina mostra questo testo e toglie le linee di quota 3D.
+La pagina mostra questo testo e toglie le linee di quota automatiche.
+
+## Quote disegnate a mano
+
+Per mostrare singole misure come le quote di SketchUp (linea con frecce e testo), elencale
+nella pagina del mobile con due punti in metri, nelle coordinate del modello:
+
+```
+window.QUOTE_MANUALI = [
+  { testo: "112,1 cm", da: [-3.08, 0.75, 0.64], a: [-3.08, 0.75, 1.76] },
+];
+```
+
+I punti si ricavano col doppio clic in modalità `?autore` (il valore `position` della riga
+copiata), uno per estremità. Le quote si accendono e spengono con la casella "Quote".
 
 ## Stanza di contorno (facoltativa)
 
