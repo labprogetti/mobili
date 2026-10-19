@@ -151,6 +151,159 @@ document.addEventListener('pointerdown', (e) => {
   if (!bottoneAR?.contains(e.target)) ripristinaDopoAR();
 });
 
+// ---------- Ante e cassetti che si aprono ----------
+// Configurazione nella pagina (window.ANIMAZIONI), con i nomi dei gruppi di SketchUp:
+//   ante:     [{ nome: "Anta", cerniera: "dx" | "sx", angolo: 95 }]
+//             cerniera = lato visto da chi sta davanti all'anta; l'anta si apre verso l'esterno
+//   cassetti: { nomi: ["c1", "c2"], verso: "-z", corsa: 0.22 }   (corsa in metri)
+// Il modello va esportato con ante e cassetti chiusi.
+
+const ANIMAZIONI = window.ANIMAZIONI || {};
+const bottoneAnte = document.querySelector('#apri-ante');
+const bottoneCassetti = document.querySelector('#apri-cassetti');
+let mobili = null; // { scena, ante: [{ perno, angolo }], cassetti: [{ nodo, inizio, spostamento }] }
+const stato = { ante: 0, cassetti: 0 }; // 0 = chiuso, 1 = aperto (anche valori intermedi)
+
+// Stessa pulizia dei nomi che fa three.js: spazi → "_", via [ ] . : /
+const nomeThree = (s) => s.replace(/\s/g, '_').replace(/[[\].:/]/g, '');
+
+function trovaGruppo(modello, nome) {
+  const n = nomeThree(nome);
+  let trovato = null;
+  modello.traverse((o) => {
+    if (!trovato && (o.name === n || o.name === `G-${n}` || o.name === `C-${n}`)) trovato = o;
+  });
+  return trovato;
+}
+
+function preparaAnimazioni(scena) {
+  const modello = scena._model;
+  modello.updateMatrixWorld(true);
+  const Vec = scena.boundingBox.min.constructor;
+  const Mat = modello.matrixWorld.constructor;
+  const versoModello = new Mat().copy(modello.matrixWorld).invert();
+  const risultato = { scena, ante: [], cassetti: [] };
+
+  for (const cfg of ANIMAZIONI.ante || []) {
+    const nodo = trovaGruppo(modello, cfg.nome);
+    if (!nodo) {
+      console.warn(`Anta "${cfg.nome}" non trovata nel modello`);
+      continue;
+    }
+    // Pianta dell'anta: i due punti più lontani sono le sue estremità orizzontali.
+    const punti = [];
+    nodo.traverse((o) => {
+      if (!o.isMesh) return;
+      const pos = o.geometry.attributes.position;
+      const rel = new Mat().multiplyMatrices(versoModello, o.matrixWorld);
+      for (let i = 0; i < pos.count; i++) punti.push(new Vec().fromBufferAttribute(pos, i).applyMatrix4(rel));
+    });
+    let [e1, e2, d2] = [null, null, -1];
+    for (let i = 0; i < punti.length; i++) {
+      for (let j = i + 1; j < punti.length; j++) {
+        const d = (punti[i].x - punti[j].x) ** 2 + (punti[i].z - punti[j].z) ** 2;
+        if (d > d2) [e1, e2, d2] = [punti[i], punti[j], d];
+      }
+    }
+    const centro = { x: (e1.x + e2.x) / 2, z: (e1.z + e2.z) / 2 };
+    // Normale verso l'esterno del mobile
+    let n = { x: -(e2.z - e1.z), z: e2.x - e1.x };
+    const l = Math.hypot(n.x, n.z);
+    n = { x: n.x / l, z: n.z / l };
+    if (mobile && (centro.x - mobile.centro.x) * n.x + (centro.z - mobile.centro.z) * n.z < 0) n = { x: -n.x, z: -n.z };
+    // Destra di chi guarda l'anta da fuori
+    const destra = { x: n.z, z: -n.x };
+    const lato = (p) => (p.x - centro.x) * destra.x + (p.z - centro.z) * destra.z;
+    const [cerniera, libero] = (cfg.cerniera === 'sx') === (lato(e1) < lato(e2)) ? [e1, e2] : [e2, e1];
+    // Verso di rotazione (attorno a +Y) che porta l'estremo libero verso l'esterno
+    const v = { x: libero.x - cerniera.x, z: libero.z - cerniera.z };
+    const segno = Math.sign(v.z * n.x - v.x * n.z) || 1;
+
+    // Perno sulla cerniera, nello stesso genitore dell'anta; l'anta ci viene agganciata
+    // mantenendo la sua posizione.
+    const genitore = nodo.parent;
+    // Un gruppo vuoto (se l'anta è una mesh singola, si usa il tipo del genitore)
+    const perno = new (nodo.isMesh ? genitore : nodo).constructor();
+    perno.name = `perno-${nodo.name}`;
+    perno.position.copy(genitore.worldToLocal(modello.localToWorld(new Vec(cerniera.x, 0, cerniera.z))));
+    genitore.add(perno);
+    perno.updateMatrixWorld(true);
+    perno.attach(nodo);
+    risultato.ante.push({ perno, angolo: (segno * (cfg.angolo || 95) * Math.PI) / 180 });
+  }
+
+  const cc = ANIMAZIONI.cassetti;
+  if (cc) {
+    const assi = { '+x': [1, 0, 0], '-x': [-1, 0, 0], '+z': [0, 0, 1], '-z': [0, 0, -1] };
+    const [dx, dy, dz] = assi[cc.verso] || assi['+z'];
+    for (const nome of cc.nomi || []) {
+      const nodo = trovaGruppo(modello, nome);
+      if (!nodo) {
+        console.warn(`Cassetto "${nome}" non trovato nel modello`);
+        continue;
+      }
+      // Spostamento in coordinate del genitore del cassetto
+      const a = nodo.parent.worldToLocal(modello.localToWorld(new Vec(0, 0, 0)));
+      const b = nodo.parent.worldToLocal(modello.localToWorld(new Vec(dx * (cc.corsa || 0.25), dy, dz * (cc.corsa || 0.25))));
+      risultato.cassetti.push({ nodo, inizio: nodo.position.clone(), spostamento: b.sub(a) });
+    }
+  }
+
+  if (risultato.ante.length) bottoneAnte?.removeAttribute('hidden');
+  if (risultato.cassetti.length) bottoneCassetti?.removeAttribute('hidden');
+  return risultato.ante.length || risultato.cassetti.length ? risultato : null;
+}
+
+function applicaStato() {
+  if (!mobili) return;
+  for (const a of mobili.ante) a.perno.rotation.y = a.angolo * stato.ante;
+  // I cassetti escono uno dopo l'altro, dal basso
+  mobili.cassetti.forEach((c, i) => {
+    const n = mobili.cassetti.length;
+    const t = Math.min(1, Math.max(0, stato.cassetti * (1 + 0.3 * (n - 1)) - 0.3 * (n - 1 - i)));
+    c.nodo.position.copy(c.inizio).addScaledVector(c.spostamento, t);
+  });
+  mobili.scena.queueRender();
+}
+
+// Porta stato[chiave] a "destinazione" con un movimento morbido.
+function anima(chiave, destinazione, durata = 900) {
+  return new Promise((fatto) => {
+    const da = stato[chiave];
+    if (da === destinazione) return fatto();
+    const inizio = performance.now();
+    const passo = (ora) => {
+      const t = Math.min(1, (ora - inizio) / durata);
+      const morbido = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      stato[chiave] = da + (destinazione - da) * morbido;
+      applicaStato();
+      if (t < 1) requestAnimationFrame(passo);
+      else fatto();
+    };
+    requestAnimationFrame(passo);
+  });
+}
+
+function aggiornaBottoni() {
+  if (bottoneAnte) bottoneAnte.textContent = stato.ante >= 1 ? 'Chiudi anta' : 'Apri anta';
+  if (bottoneCassetti) bottoneCassetti.textContent = stato.cassetti >= 1 ? 'Chiudi cassetti' : 'Apri cassetti';
+}
+
+let inMovimento = false;
+async function sequenza(passi) {
+  if (inMovimento) return;
+  inMovimento = true;
+  for (const [chiave, valore] of passi) await anima(chiave, valore);
+  inMovimento = false;
+  aggiornaBottoni();
+}
+
+// I cassetti passano dall'apertura dell'anta: si apre prima l'anta, si chiudono prima i cassetti.
+bottoneAnte?.addEventListener('click', () =>
+  sequenza(stato.ante >= 1 ? [['cassetti', 0], ['ante', 0]] : [['ante', 1]]));
+bottoneCassetti?.addEventListener('click', () =>
+  sequenza(stato.cassetti >= 1 ? [['cassetti', 0]] : [['ante', mobili?.ante.length ? 1 : 0], ['cassetti', 1]]));
+
 // ---------- Movimenti della camera ----------
 
 const FOV = 30; // gradi, fisso: serve per calcolare la distanza della camera
@@ -448,6 +601,8 @@ mv.addEventListener('load', () => {
     // le due superfici coincidono e il pavimento si riempie di strisce. C'è già il pavimento.
     mv.shadowIntensity = 0;
   }
+
+  if (analisi && ANIMAZIONI) mobili = preparaAnimazioni(analisi.scena);
 
   if (typeof window.INGOMBRO === 'string') {
     // Misure scritte nella pagina: per mobili non rettangolari, o non allineati agli assi,

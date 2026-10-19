@@ -77,6 +77,26 @@ window.INGOMBRO = "L 196 × P 50 (max) × H 246 cm";
 
 La pagina mostra questo testo e toglie le linee di quota automatiche.
 
+## Ante e cassetti che si aprono
+
+In SketchUp: mobile **chiuso**, un gruppo per ogni anta e uno per ogni cassetto (scatola e
+frontale insieme), con un nome. Nella pagina del mobile:
+
+```
+window.ANIMAZIONI = {
+  ante: [{ nome: "Anta", cerniera: "dx", angolo: 95 }],
+  cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22 },
+};
+```
+
+- `cerniera`: lato della cerniera visto da chi sta davanti all'anta (`"sx"` o `"dx"`);
+  l'anta si apre sempre verso l'esterno del mobile.
+- `cassetti.nomi`: nell'ordine in cui escono; `verso`: asse lungo cui scorrono
+  (`"+x"`, `"-x"`, `"+z"`, `"-z"`); `corsa`: quanto escono, in metri.
+
+Compaiono i bottoni "Apri anta" / "Apri cassetti". Aprendo i cassetti si apre prima l'anta;
+chiudendo l'anta si chiudono prima i cassetti. In AR il mobile resta com'è in quel momento.
+
 ## Quote disegnate a mano
 
 Per mostrare singole misure come le quote di SketchUp (linea con frecce e testo), elencale

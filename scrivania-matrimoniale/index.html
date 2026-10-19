@@ -49,6 +49,8 @@
       <button type="button" data-vista="lato" aria-pressed="false">Lato</button>
       <button type="button" data-vista="pianta" aria-pressed="false">Pianta</button>
       <button type="button" data-vista="prospettiva" aria-pressed="true">Prospettiva</button>
+      <button type="button" id="apri-ante" hidden>Apri anta</button>
+      <button type="button" id="apri-cassetti" hidden>Apri cassetti</button>
       <div class="opzioni">
         <label hidden>Stanza
           <select id="modo-stanza">
@@ -77,6 +79,12 @@
     // Misure scritte a mano: la colonna ha un fianco inclinato, e il rettangolo calcolato
     // in automatico risulterebbe più profondo del vero (75 cm invece di 50).
     window.INGOMBRO = "L 196 × P 50 (max) × H 246 cm";
+
+    // Parti che si aprono: nomi dei gruppi di SketchUp. Cerniera vista da chi sta davanti all'anta.
+    window.ANIMAZIONI = {
+      ante: [{ nome: "Anta", cerniera: "dx", angolo: 95 }],
+      cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22 }, // dal basso verso l'alto
+    };
 
     // Note cliccabili sul modello.
     // Per aggiungerne una: apri la pagina con ?autore in fondo all'indirizzo,
