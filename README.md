@@ -143,6 +143,12 @@ chiamato **`Stanza`** (Informazioni entità → Nome). La pagina lo riconosce da
 
 Senza un gruppo `Stanza`, quote e inquadratura valgono per tutto il modello.
 
+## Oggetti di contorno (sedie, oggetti sul piano…)
+
+Se il mobile è in un gruppo chiamato **`mobile`**, tutto quello che sta fuori da quel gruppo
+e dalla `Stanza` (una sedia, un portatile, una lampada) è contorno: si vede pieno, non conta
+per l'inquadratura e in realtà aumentata sparisce, come la stanza.
+
 ## Note cliccabili
 
 Apri la pagina con `?autore` in fondo all'indirizzo, orienta la vista, fai doppio clic

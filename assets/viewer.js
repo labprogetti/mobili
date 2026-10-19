@@ -63,9 +63,17 @@ function analizzaModello() {
   modello.traverse((o) => {
     if (/stanza/i.test(o.name) && !radici.some((r) => discendeDa(o, r))) radici.push(o);
   });
+  // Se il mobile è in un gruppo "mobile", tutto il resto che non è Stanza (sedie, oggetti
+  // sul piano…) è contorno: resta pieno, ma non conta per l'inquadratura e in AR si nasconde.
+  // I suffissi di Blender (.001, .002…) per three.js diventano 001, 002…
+  const radiciMobile = [];
+  modello.traverse((o) => {
+    if (/^(G-|C-)?mobile\d*$/i.test(o.name) && !radiciMobile.some((r) => discendeDa(o, r))) radiciMobile.push(o);
+  });
 
   const boxMobile = new Box();
   const pezziStanza = [];
+  const pezziContorno = [];
   modello.traverse((o) => {
     // Mesh e linee degli spigoli (tools/spigoli.mjs)
     if (!o.isMesh && !o.isLineSegments) return;
@@ -96,12 +104,14 @@ function analizzaModello() {
     if (radici.some((r) => discendeDa(o, r))) {
       // Superfici piatte e orizzontali = pavimento: resta sempre pieno.
       pezziStanza.push({ mesh: o, originale: o.material, pavimento: o.isMesh && b.max.y - b.min.y < 0.02 });
+    } else if (radiciMobile.length && !radiciMobile.some((r) => discendeDa(o, r))) {
+      pezziContorno.push(o);
     } else if (o.isMesh) {
       boxMobile.union(b);
     }
   });
 
-  return { scena, pezziStanza, box: boxMobile.isEmpty() ? null : boxMobile };
+  return { scena, pezziStanza, pezziContorno, box: boxMobile.isEmpty() ? null : boxMobile };
 }
 
 // ---------- Stanza: piena, trasparente, nascosta ----------
@@ -139,23 +149,29 @@ function mostraStanza(modo) {
 
 sceltaStanza?.addEventListener('change', () => mostraStanza(sceltaStanza.value));
 
-// In realtà aumentata si vede solo il mobile. Il visore AR dell'iPhone (Quick Look)
-// non segnala quando si chiude: la stanza torna alla prima interazione con la pagina.
+// In realtà aumentata si vede solo il mobile: stanza e contorno (sedie, oggetti) spariscono.
+// Il visore AR dell'iPhone (Quick Look) non segnala quando si chiude: tutto torna alla
+// prima interazione con la pagina.
 let stanzaNascostaPerAR = false;
+let contorno = []; // pezzi di contorno, impostati al caricamento
 const bottoneAR = mv.querySelector('[slot="ar-button"]');
 
 bottoneAR?.addEventListener('click', () => {
-  if (!stanza) return;
+  if (!stanza && !contorno.length) return;
   stanzaNascostaPerAR = true;
-  mostraStanza('nascosta');
+  if (stanza) mostraStanza('nascosta');
+  for (const o of contorno) o.visible = false;
   mv.shadowIntensity = 1; // nella stanza vera serve l'ombra che "appoggia" il mobile a terra
 });
 
 function ripristinaDopoAR() {
   if (!stanzaNascostaPerAR) return;
   stanzaNascostaPerAR = false;
-  mostraStanza(sceltaStanza?.value || 'trasparente');
-  mv.shadowIntensity = 0;
+  for (const o of contorno) o.visible = true;
+  if (stanza) {
+    mostraStanza(sceltaStanza?.value || 'trasparente');
+    mv.shadowIntensity = 0;
+  }
 }
 
 mv.addEventListener('ar-status', (e) => {
@@ -855,6 +871,9 @@ mv.addEventListener('load', () => {
     centro: { x: (min.x + max.x) / 2, y: (min.y + max.y) / 2, z: (min.z + max.z) / 2 },
     raggio: Math.hypot(dim.x, dim.y, dim.z) / 2,
   };
+
+  contorno = analisi?.pezziContorno || [];
+  if (contorno.length) mv.setAttribute('ar-modes', 'webxr quick-look'); // Scene Viewer mostrerebbe tutto il file
 
   if (analisi?.pezziStanza.length) {
     stanza = { scena: analisi.scena, pezzi: analisi.pezziStanza };
