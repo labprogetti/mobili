@@ -72,12 +72,18 @@
     // = vista Fronte di SketchUp), "+x", "-z" o "-x". Regola viste e quote L/P.
     window.FRONTE = "+x";
 
+    // Misure scritte a mano: la colonna ha un fianco inclinato, e il rettangolo calcolato
+    // in automatico risulterebbe più profondo del vero (75 cm invece di 50).
+    window.INGOMBRO = "L 196 × P 50 (max) × H 246 cm";
+
     // Note cliccabili sul modello.
     // Per aggiungerne una: apri la pagina con ?autore in fondo all'indirizzo,
     // orienta la vista come vuoi che la veda il falegname, fai doppio clic sul punto
     // e incolla qui la riga copiata, sostituendo "…" con il testo della nota.
     window.NOTE = [
-      // { testo: "Cassetto centrale con guide push-pull", position: "0.000m 0.700m 0.300m", normal: "0.000 0.000 1.000", orbit: "20deg 75deg 1.20m" },
+      { testo: "Colonna: profondità 50 cm alla base (45 + 5 cm), fianco inclinato", position: "-2.550m 1.299m 0.298m", normal: "1.000 0.000 0.000", orbit: "70deg 75deg 2.40m" },
+      { testo: "Piano scrivania: lunghezza 112,1 cm", position: "-2.784m 0.775m 1.197m", normal: "0.000 1.000 0.000", orbit: "105deg 55deg 1.80m" },
+      { testo: "Pensile: profondità 30 cm", position: "-2.540m 1.620m 1.200m", normal: "1.000 0.000 0.000", orbit: "100deg 80deg 1.80m" },
     ];
   </script>
   <script type="module" src="../assets/viewer.js"></script>

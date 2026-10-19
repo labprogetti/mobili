@@ -35,6 +35,13 @@ gltf-transform optimize _sorgenti/<nome>.glb <mobile>/<nome>-web.glb --compress 
 
 Sopra i 5 MB: `--compress draco --texture-compress webp` al posto dei due `false`.
 
+Poi gli spigoli neri, come in SketchUp (senza, pannelli e cassetti dello stesso colore si
+confondono). Si può usare lo stesso file come ingresso e uscita:
+
+```
+node tools/spigoli.mjs <mobile>/<nome>-web.glb <mobile>/<nome>-web.glb
+```
+
 Le quattro opzioni `--join/--instance/--palette/--flatten false` servono: con i valori
 predefiniti `optimize` unisce le mesh con lo stesso materiale e appiattisce i gruppi, e la
 pagina non riuscirebbe più a separare la `Stanza` dal mobile né a misurarlo.
@@ -50,6 +57,18 @@ window.FRONTE = "+x";   // "+z" (predefinito), "+x", "-z" o "-x"
 
 Per capire quale: apri la pagina e premi i bottoni Fronte/Lato; se il fronte vero compare
 con "Lato", è `"+x"`.
+
+## Misure scritte a mano
+
+Le quote automatiche misurano il rettangolo che contiene il mobile, allineato agli assi.
+Per mobili con fianchi inclinati, ruotati, o con ante e cassetti aperti nel modello, quel
+rettangolo è più grande del vero. In quei casi scrivi le misure nella pagina del mobile:
+
+```
+window.INGOMBRO = "L 196 × P 50 (max) × H 246 cm";
+```
+
+La pagina mostra questo testo e toglie le linee di quota 3D.
 
 ## Stanza di contorno (facoltativa)
 

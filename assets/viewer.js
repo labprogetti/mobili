@@ -63,14 +63,17 @@ function analizzaModello() {
   const boxMobile = new Box();
   const pezziStanza = [];
   modello.traverse((o) => {
-    if (!o.isMesh) return;
+    // Mesh e linee degli spigoli (tools/spigoli.mjs)
+    if (!o.isMesh && !o.isLineSegments) return;
+    // Le linee non devono intercettare il doppio clic: three.js le "colpisce" anche a distanza.
+    if (o.isLineSegments) o.raycast = nessunRaycast;
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     rel.multiplyMatrices(inversa, o.matrixWorld);
     const b = o.geometry.boundingBox.clone().applyMatrix4(rel);
     if (radici.some((r) => discendeDa(o, r))) {
       // Superfici piatte e orizzontali = pavimento: resta sempre pieno.
-      pezziStanza.push({ mesh: o, originale: o.material, pavimento: b.max.y - b.min.y < 0.02 });
-    } else {
+      pezziStanza.push({ mesh: o, originale: o.material, pavimento: o.isMesh && b.max.y - b.min.y < 0.02 });
+    } else if (o.isMesh) {
       boxMobile.union(b);
     }
   });
@@ -103,8 +106,10 @@ function mostraStanza(modo) {
     p.mesh.visible = modo !== 'nascosta';
     p.mesh.material = modo === 'trasparente' && !p.pavimento ? trasparente(p.originale) : p.originale;
     // Se la stanza non è piena, il doppio clic deve "passarci attraverso" e colpire il mobile.
-    if (modo === 'piena') delete p.mesh.raycast;
-    else p.mesh.raycast = nessunRaycast;
+    if (p.mesh.isMesh) {
+      if (modo === 'piena') delete p.mesh.raycast;
+      else p.mesh.raycast = nessunRaycast;
+    }
   }
   stanza.scena.queueRender();
 }
@@ -372,7 +377,16 @@ mv.addEventListener('load', () => {
     mv.maxCameraOrbit = 'auto 90deg 300%';
   }
 
-  piazzaQuote();
+  if (typeof window.INGOMBRO === 'string') {
+    // Misure scritte nella pagina: per mobili non rettangolari, o non allineati agli assi,
+    // il rettangolo calcolato sarebbe più grande del vero. Niente linee di quota 3D.
+    const ingombro = document.querySelector('#ingombro');
+    if (ingombro) ingombro.textContent = `Ingombro: ${window.INGOMBRO}`;
+    mv.classList.add('senza-quote');
+    interruttoreQuote?.closest('label')?.setAttribute('hidden', '');
+  } else {
+    piazzaQuote();
+  }
   vaiA({ orbit: orbitaVista('prospettiva') });
   segnaVista(document.querySelector('[data-vista="prospettiva"]'));
   mv.jumpCameraToGoal();
