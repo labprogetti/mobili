@@ -107,8 +107,15 @@ Il bottone "Schermo intero" compare dove il browser lo consente (non su iPhone).
 ## Specchi
 
 I materiali il cui nome contiene `Mirror` o `Specchio` (come il "Mirror 01" di SketchUp)
-diventano metallo lucido. Riflettono la luce d'ambiente del visualizzatore, non la stanza:
-un riflesso vero degli oggetti model-viewer non lo offre.
+diventano specchi veri: riflettono mobile e stanza, come il Reflector di three.js (la scena
+viene disegnata una seconda volta da una camera speculare). Funziona per specchi piani e
+allineati agli assi del modello.
+
+model-viewer non espone le classi di three.js, e una seconda copia della libreria non
+funziona con il suo renderer: `viewer.js` usa quelle degli oggetti che model-viewer ha già
+(camera, buffer e materiale dell'ombra, per questo nella pagina resta `shadow-intensity="1"`).
+Se una versione futura di model-viewer le cambia, lo specchio torna metallo lucido e in
+console compare "Specchio: riflesso vero non disponibile".
 
 ## Quote disegnate a mano
 

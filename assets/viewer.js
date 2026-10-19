@@ -369,6 +369,187 @@ bottoneCassetti?.addEventListener('click', () => {
   sequenza(c.valore >= 1 ? [[[c], 0]] : [[c.anta ? [c.anta] : [], 1], [[c], 1]]);
 });
 
+// ---------- Specchi che riflettono davvero ----------
+// Riflesso planare, la stessa tecnica del Reflector di three.js: a ogni fotogramma la scena
+// viene disegnata una seconda volta da una camera speculare rispetto allo specchio, e
+// l'immagine finisce sullo specchio. model-viewer non espone le classi di three.js e una
+// seconda copia della libreria non funziona con il suo renderer: le classi si prendono dagli
+// oggetti che model-viewer ha già (camera, buffer e materiale dell'ombra). Se mancano, lo
+// specchio resta metallo lucido (vedi analizzaModello).
+
+const SPECCHIO_VERTEX = `
+uniform mat4 textureMatrix;
+varying vec4 vUv;
+#include <common>
+#include <logdepthbuf_pars_vertex>
+void main() {
+  vUv = textureMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  #include <logdepthbuf_vertex>
+}`;
+
+const SPECCHIO_FRAGMENT = `
+uniform vec3 color;
+uniform sampler2D tDiffuse;
+varying vec4 vUv;
+#include <logdepthbuf_pars_fragment>
+void main() {
+  #include <logdepthbuf_fragment>
+  vec4 base = texture2DProj(tDiffuse, vUv);
+  gl_FragColor = vec4(base.rgb * color, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`;
+
+function creaSpecchi(scena) {
+  const modello = scena._model;
+  const sorgenti = [];
+  modello.traverse((o) => {
+    if (o.isMesh && [].concat(o.material).some((m) => m.userData.specchio)) sorgenti.push(o);
+  });
+  if (!sorgenti.length) return;
+
+  // In three.js i marcatori isWebGLRenderTarget, isShaderMaterial… stanno sugli oggetti, non sulle classi.
+  const rtOmbra = scena.shadow?.renderTarget;
+  const shaderOmbra = scena.shadow?.horizontalBlurMaterial;
+  const RenderTarget = rtOmbra?.isWebGLRenderTarget && rtOmbra.constructor;
+  const Shader = shaderOmbra?.isShaderMaterial && shaderOmbra.constructor;
+  const Vec4 = rtOmbra?.scissor?.isVector4 && rtOmbra.scissor.constructor;
+  const Camera = scena.camera?.isPerspectiveCamera && scena.camera.constructor;
+  if (!RenderTarget || !Shader || !Vec4 || !Camera) {
+    console.info('Specchio: riflesso vero non disponibile con questa versione di model-viewer, resta lucido.');
+    return;
+  }
+  const Vec3 = scena.boundingBox.min.constructor;
+  const Mat4 = modello.matrixWorld.constructor;
+  const Mesh = sorgenti[0].constructor;
+  const Geometria = sorgenti[0].geometry.constructor;
+  // Le posizioni del modello ottimizzato sono "interlacciate" (altro tipo di contenitore):
+  // gli indici invece usano il contenitore semplice, quello che serve.
+  const indici = sorgenti[0].geometry.index;
+  const Attributo = indici?.isBufferAttribute && !indici.isInterleavedBufferAttribute && indici.constructor;
+  if (!Attributo) {
+    console.info('Specchio: riflesso vero non disponibile con questo modello, resta lucido.');
+    return;
+  }
+  const Colore = [].concat(sorgenti[0].material)[0].color.constructor;
+
+  modello.updateMatrixWorld(true);
+  const inversa = new Mat4().copy(modello.matrixWorld).invert();
+  const lato = () => Math.min(2048, Math.round(mv.clientWidth * Math.min(devicePixelRatio, 2)));
+  const alto = () => Math.min(2048, Math.round(mv.clientHeight * Math.min(devicePixelRatio, 2)));
+
+  for (const sorgente of sorgenti) {
+    // Ingombro dello specchio in coordinate del modello: l'asse più sottile è la normale.
+    const rel = new Mat4().multiplyMatrices(inversa, sorgente.matrixWorld);
+    const pos = sorgente.geometry.attributes.position;
+    const min = new Vec3(Infinity, Infinity, Infinity);
+    const max = new Vec3(-Infinity, -Infinity, -Infinity);
+    for (let i = 0; i < pos.count; i++) {
+      const p = new Vec3().fromBufferAttribute(pos, i).applyMatrix4(rel);
+      min.min(p);
+      max.max(p);
+    }
+    const dim = new Vec3().subVectors(max, min);
+    const centro = new Vec3().addVectors(min, max).multiplyScalar(0.5);
+    const asse = ['x', 'y', 'z'].reduce((a, b) => (dim[b] < dim[a] ? b : a));
+    // Verso: dalla parte del fronte del mobile; per specchi di fianco, verso il centro del mobile
+    let segno = asse === 'y' ? 1 : Math.sign(FRONTE.n[asse] || 0);
+    if (!segno) segno = Math.sign((mobile?.centro[asse] ?? centro[asse]) - centro[asse]) || 1;
+    const normale = new Vec3();
+    normale[asse] = segno;
+    const [larghezza, altezza] = asse === 'x' ? [dim.z, dim.y] : asse === 'z' ? [dim.x, dim.y] : [dim.x, dim.z];
+    centro[asse] += segno * (dim[asse] / 2 + 0.001); // 1 mm davanti alla superficie
+
+    const geometria = new Geometria();
+    const [w, h] = [larghezza / 2, altezza / 2];
+    geometria.setAttribute('position', new Attributo(new Float32Array([-w, -h, 0, w, -h, 0, w, h, 0, -w, h, 0]), 3));
+    geometria.setIndex([0, 1, 2, 0, 2, 3]);
+
+    const bersaglio = new RenderTarget(lato(), alto(), { samples: 4, type: 1016 /* HalfFloatType */ });
+    const colore = new Colore();
+    colore.setRGB(0.9, 0.92, 0.93); // un vero specchio riflette circa il 90% della luce
+    const materiale = new Shader({
+      name: 'specchio',
+      uniforms: { color: { value: colore }, tDiffuse: { value: bersaglio.texture }, textureMatrix: { value: new Mat4() } },
+      vertexShader: SPECCHIO_VERTEX,
+      fragmentShader: SPECCHIO_FRAGMENT,
+    });
+    const specchio = new Mesh(geometria, materiale);
+    specchio.name = 'specchio-riflettente';
+    specchio.position.copy(centro);
+    modello.add(specchio);
+    specchio.updateMatrixWorld(true);
+    specchio.lookAt(modello.localToWorld(centro.clone().add(normale)));
+    specchio.raycast = nessunRaycast;
+
+    const camera = new Camera();
+    const [posSpecchio, posCamera, n, vista, obiettivo, mira] = [0, 0, 0, 0, 0, 0].map(() => new Vec3());
+    const rotazione = new Mat4();
+    const piano = new Vec4();
+    const q = new Vec4();
+    const matrice = materiale.uniforms.textureMatrix.value;
+
+    specchio.onBeforeRender = (renderer, scena3, cam) => {
+      posSpecchio.setFromMatrixPosition(specchio.matrixWorld);
+      posCamera.setFromMatrixPosition(cam.matrixWorld);
+      rotazione.extractRotation(specchio.matrixWorld);
+      n.set(0, 0, 1).applyMatrix4(rotazione);
+      vista.subVectors(posSpecchio, posCamera);
+      if (vista.dot(n) > 0) return; // camera dietro lo specchio
+
+      // Camera speculare
+      vista.reflect(n).negate().add(posSpecchio);
+      rotazione.extractRotation(cam.matrixWorld);
+      mira.set(0, 0, -1).applyMatrix4(rotazione).add(posCamera);
+      obiettivo.subVectors(posSpecchio, mira).reflect(n).negate().add(posSpecchio);
+      camera.position.copy(vista);
+      camera.up.set(0, 1, 0).applyMatrix4(rotazione).reflect(n);
+      camera.lookAt(obiettivo);
+      camera.far = cam.far;
+      camera.updateMatrixWorld();
+      camera.projectionMatrix.copy(cam.projectionMatrix);
+
+      // Dalle coordinate dello specchio a quelle dell'immagine riflessa
+      matrice.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
+      matrice.multiply(camera.projectionMatrix).multiply(camera.matrixWorldInverse).multiply(specchio.matrixWorld);
+
+      // Piano di taglio obliquo: niente di quello che sta dietro lo specchio finisce nel riflesso
+      const nv = n.clone().transformDirection(camera.matrixWorldInverse);
+      const pv = posSpecchio.clone().applyMatrix4(camera.matrixWorldInverse);
+      piano.set(nv.x, nv.y, nv.z, -nv.dot(pv));
+      const e = camera.projectionMatrix.elements;
+      q.set((Math.sign(piano.x) + e[8]) / e[0], (Math.sign(piano.y) + e[9]) / e[5], -1, (1 + e[10]) / e[14]);
+      piano.multiplyScalar(2 / piano.dot(q));
+      e[2] = piano.x;
+      e[6] = piano.y;
+      e[10] = piano.z + 1;
+      e[14] = piano.w;
+
+      // Secondo rendering, nel buffer dello specchio
+      specchio.visible = false;
+      const precedente = renderer.getRenderTarget();
+      const xr = renderer.xr.enabled;
+      const ombre = renderer.shadowMap.autoUpdate;
+      renderer.xr.enabled = false;
+      renderer.shadowMap.autoUpdate = false;
+      renderer.setRenderTarget(bersaglio);
+      renderer.state.buffers.depth.setMask(true);
+      if (renderer.autoClear === false) renderer.clear();
+      renderer.render(scena3, camera);
+      renderer.xr.enabled = xr;
+      renderer.shadowMap.autoUpdate = ombre;
+      renderer.setRenderTarget(precedente);
+      if (cam.viewport !== undefined) renderer.state.viewport(cam.viewport);
+      specchio.visible = true;
+    };
+
+    window.addEventListener('resize', () => bersaglio.setSize(lato(), alto()));
+    document.addEventListener('fullscreenchange', () => requestAnimationFrame(() => bersaglio.setSize(lato(), alto())));
+  }
+  scena.queueRender();
+}
+
 // ---------- Schermo intero ----------
 // Visualizzatore e comandi insieme (#area). Sull'iPhone Safari non lo consente: il bottone resta nascosto.
 
@@ -691,6 +872,14 @@ mv.addEventListener('load', () => {
   if (analisi && ANIMAZIONI) {
     mobili = preparaAnimazioni(analisi.scena);
     aggiornaBottoni();
+  }
+  if (analisi) {
+    // Se il riflesso non riesce, lo specchio resta lucido e il resto della pagina funziona.
+    try {
+      creaSpecchi(analisi.scena);
+    } catch (e) {
+      console.warn('Specchio: riflesso vero non riuscito, resta lucido.', e);
+    }
   }
 
   if (typeof window.INGOMBRO === 'string') {
