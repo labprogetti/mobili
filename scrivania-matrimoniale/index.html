@@ -86,12 +86,13 @@
     // Parti che si aprono: nomi dei gruppi di SketchUp. Cerniera vista da chi sta davanti all'anta.
     window.ANIMAZIONI = {
       ante: [
-        { nome: "Anta", cerniera: "dx", angolo: 95 },     // colonna
         { nome: "Anta1", cerniera: "alto", angolo: 90 },  // pensile, a ribalta
         { nome: "Anta2", cerniera: "alto", angolo: 90 },  // pensile, a ribalta
+        // La colonna non ha più l'anta. Se torna: { nome: "Anta", cerniera: "dx", angolo: 95 },
+        // e nei cassetti anta: "Anta" (si apre prima di loro).
       ],
-      // dal basso verso l'alto; escono dall'apertura dell'anta della colonna
-      cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22, anta: "Anta" },
+      // dal basso verso l'alto
+      cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22 },
     };
 
     // Note cliccabili sul modello.

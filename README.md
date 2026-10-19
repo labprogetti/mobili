@@ -104,6 +104,12 @@ cassetti. In AR il mobile resta com'è in quel momento.
 
 Il bottone "Schermo intero" compare dove il browser lo consente (non su iPhone).
 
+## Specchi
+
+I materiali il cui nome contiene `Mirror` o `Specchio` (come il "Mirror 01" di SketchUp)
+diventano metallo lucido. Riflettono la luce d'ambiente del visualizzatore, non la stanza:
+un riflesso vero degli oggetti model-viewer non lo offre.
+
 ## Quote disegnate a mano
 
 Per mostrare singole misure come le quote di SketchUp (linea con frecce e testo), elencale

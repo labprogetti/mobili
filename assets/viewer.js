@@ -78,6 +78,16 @@ function analizzaModello() {
         m.polygonOffset = true;
         m.polygonOffsetFactor = 1;
         m.polygonOffsetUnits = 1;
+        // Materiali specchio di SketchUp ("Mirror…", "Specchio…"): da SketchUp arrivano come
+        // una semplice immagine grigia. Diventano metallo lucido che riflette l'ambiente.
+        if (/mirror|specchio/i.test(m.name) && !m.userData.specchio) {
+          m.userData.specchio = true;
+          m.map = null;
+          m.color.setRGB(0.92, 0.94, 0.95);
+          m.metalness = 1;
+          m.roughness = 0.04;
+          m.needsUpdate = true;
+        }
       }
     }
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
