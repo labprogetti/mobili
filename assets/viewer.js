@@ -236,22 +236,34 @@ function preparaAnimazioni(scena) {
     // Direzione del lato lungo in pianta: asse principale dei vertici (x-z). I due vertici più
     // lontani non vanno bene: su un pannello sottile sono gli angoli in diagonale, e l'asse
     // della cerniera verrebbe storto.
+    // Vertici doppi (stesso punto, normali o UV diverse) contati una volta sola
+    const unici = [...new Map(punti.map((p) => [`${p.x.toFixed(4)},${p.z.toFixed(4)}`, p])).values()];
     const m = { x: 0, z: 0 };
-    for (const p of punti) { m.x += p.x / punti.length; m.z += p.z / punti.length; }
+    for (const p of unici) { m.x += p.x / unici.length; m.z += p.z / unici.length; }
     let sxx = 0, szz = 0, sxz = 0;
-    for (const p of punti) {
+    for (const p of unici) {
       sxx += (p.x - m.x) ** 2;
       szz += (p.z - m.z) ** 2;
       sxz += (p.x - m.x) * (p.z - m.z);
     }
-    const ang = Math.atan2(2 * sxz, sxx - szz) / 2;
+    let ang = Math.atan2(2 * sxz, sxx - szz) / 2;
+    // Ante dritte (entro 2°) agganciate agli assi: la media dei vertici dipende da come
+    // SketchUp ha diviso le facce, e due ante uguali risulterebbero leggermente diverse.
+    const quarto = Math.round(ang / (Math.PI / 2)) * (Math.PI / 2);
+    if (Math.abs(ang - quarto) < (2 * Math.PI) / 180) ang = quarto;
     const u = { x: Math.cos(ang), z: Math.sin(ang) };
-    const proiezioni = punti.map((p) => (p.x - m.x) * u.x + (p.z - m.z) * u.z);
-    const [pMin, pMax] = [Math.min(...proiezioni), Math.max(...proiezioni)];
+    const w = { x: -u.z, z: u.x };
+    // Centro dagli ingombri (metà tra minimo e massimo), non dalla media dei vertici
+    const lungo = unici.map((p) => p.x * u.x + p.z * u.z);
+    const largo = unici.map((p) => p.x * w.x + p.z * w.z);
+    const [pMin, pMax] = [Math.min(...lungo), Math.max(...lungo)];
+    const qMezzo = (Math.min(...largo) + Math.max(...largo)) / 2;
+    const pMezzo = (pMin + pMax) / 2;
+    const centro = { x: u.x * pMezzo + w.x * qMezzo, z: u.z * pMezzo + w.z * qMezzo };
     // Estremità del pannello, sulla sua linea di mezzo
-    const e1 = { x: m.x + u.x * pMin, z: m.z + u.z * pMin };
-    const e2 = { x: m.x + u.x * pMax, z: m.z + u.z * pMax };
-    const centro = { x: (e1.x + e2.x) / 2, z: (e1.z + e2.z) / 2 };
+    const mezzaLunghezza = (pMax - pMin) / 2;
+    const e1 = { x: centro.x - u.x * mezzaLunghezza, z: centro.z - u.z * mezzaLunghezza };
+    const e2 = { x: centro.x + u.x * mezzaLunghezza, z: centro.z + u.z * mezzaLunghezza };
     const yMin = Math.min(...punti.map((p) => p.y));
     const yMax = Math.max(...punti.map((p) => p.y));
     // Normale verso l'esterno del mobile
@@ -484,7 +496,7 @@ function creaSpecchi(scena) {
 
     const bersaglio = new RenderTarget(lato(), alto(), { samples: 4, type: 1016 /* HalfFloatType */ });
     const colore = new Colore();
-    colore.setRGB(0.9, 0.92, 0.93); // un vero specchio riflette circa il 90% della luce
+    colore.setRGB(0.72, 0.74, 0.75); // leggermente scuro, con una punta fredda come il vetro
     const materiale = new Shader({
       name: 'specchio',
       uniforms: { color: { value: colore }, tDiffuse: { value: bersaglio.texture }, textureMatrix: { value: new Mat4() } },
