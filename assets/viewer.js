@@ -11,6 +11,10 @@ const MODO_AUTORE = new URLSearchParams(location.search).has('autore');
 
 await customElements.whenDefined('model-viewer');
 
+// Rotella del mouse più dolce: uno scatto avvicina del 6% invece del 14%. Sui touch screen
+// resta il valore normale, altrimenti il pizzico con due dita diventa faticoso.
+if (matchMedia('(pointer: fine)').matches) mv.zoomSensitivity = 0.35;
+
 // ---------- Barra di caricamento ----------
 
 const barra = mv.querySelector('.barra');
@@ -203,13 +207,24 @@ function preparaAnimazioni(scena) {
       const rel = new Mat().multiplyMatrices(versoModello, o.matrixWorld);
       for (let i = 0; i < pos.count; i++) punti.push(new Vec().fromBufferAttribute(pos, i).applyMatrix4(rel));
     });
-    let [e1, e2, d2] = [null, null, -1];
-    for (let i = 0; i < punti.length; i++) {
-      for (let j = i + 1; j < punti.length; j++) {
-        const d = (punti[i].x - punti[j].x) ** 2 + (punti[i].z - punti[j].z) ** 2;
-        if (d > d2) [e1, e2, d2] = [punti[i], punti[j], d];
-      }
+    // Direzione del lato lungo in pianta: asse principale dei vertici (x-z). I due vertici più
+    // lontani non vanno bene: su un pannello sottile sono gli angoli in diagonale, e l'asse
+    // della cerniera verrebbe storto.
+    const m = { x: 0, z: 0 };
+    for (const p of punti) { m.x += p.x / punti.length; m.z += p.z / punti.length; }
+    let sxx = 0, szz = 0, sxz = 0;
+    for (const p of punti) {
+      sxx += (p.x - m.x) ** 2;
+      szz += (p.z - m.z) ** 2;
+      sxz += (p.x - m.x) * (p.z - m.z);
     }
+    const ang = Math.atan2(2 * sxz, sxx - szz) / 2;
+    const u = { x: Math.cos(ang), z: Math.sin(ang) };
+    const proiezioni = punti.map((p) => (p.x - m.x) * u.x + (p.z - m.z) * u.z);
+    const [pMin, pMax] = [Math.min(...proiezioni), Math.max(...proiezioni)];
+    // Estremità del pannello, sulla sua linea di mezzo
+    const e1 = { x: m.x + u.x * pMin, z: m.z + u.z * pMin };
+    const e2 = { x: m.x + u.x * pMax, z: m.z + u.z * pMax };
     const centro = { x: (e1.x + e2.x) / 2, z: (e1.z + e2.z) / 2 };
     const yMin = Math.min(...punti.map((p) => p.y));
     const yMax = Math.max(...punti.map((p) => p.y));
@@ -222,8 +237,7 @@ function preparaAnimazioni(scena) {
     let puntoCerniera, asse, segno;
     if (cfg.cerniera === 'alto' || cfg.cerniera === 'basso') {
       // Cerniera orizzontale lungo il bordo alto (o basso) dell'anta
-      const u = { x: (e2.x - e1.x) / Math.sqrt(d2), z: (e2.z - e1.z) / Math.sqrt(d2) };
-      const r = cfg.cerniera === 'alto' ? -1 : 1; // dove sta il bordo libero rispetto alla cerniera
+      const r =cfg.cerniera === 'alto' ? -1 : 1; // dove sta il bordo libero rispetto alla cerniera
       puntoCerniera = new Vec(centro.x, cfg.cerniera === 'alto' ? yMax : yMin, centro.z);
       asse = new Vec(u.x, 0, u.z);
       // Verso di rotazione che porta il bordo libero verso l'esterno
