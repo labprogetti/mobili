@@ -1,0 +1,10 @@
+# File sorgente: non vanno pubblicati (il repository è pubblico)
+*.skp
+*.skb
+*~.skp
+_sorgenti/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store

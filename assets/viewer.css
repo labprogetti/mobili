@@ -1,0 +1,328 @@
+/* Visualizzatore mobili — stile comune a tutte le pagine */
+
+:root {
+  --sfondo: #f4f1ec;
+  --superficie: #ffffff;
+  --testo: #26221d;
+  --testo-tenue: #6b6359;
+  --bordo: #d9d2c7;
+  --accento: #8a5a2b;
+  --accento-testo: #ffffff;
+  --quota: #b4471f;
+  --ombra: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sfondo: #1c1a17;
+    --superficie: #2a2723;
+    --testo: #eee8df;
+    --testo-tenue: #a89f93;
+    --bordo: #443f38;
+    --accento: #d39a5f;
+    --accento-testo: #1c1a17;
+    --quota: #ff8a5c;
+    --ombra: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--sfondo);
+  color: var(--testo);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.testata {
+  padding: 16px 16px 8px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.testata h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.ingombro {
+  margin: 4px 0 0;
+  color: var(--testo-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.contenitore {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+}
+
+/* ---------- Visualizzatore ---------- */
+
+model-viewer {
+  display: block;
+  width: 100%;
+  height: min(72vh, 720px);
+  min-height: 360px;
+  background: var(--superficie);
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  --poster-color: transparent;
+}
+
+.barra {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bordo);
+  overflow: hidden;
+  transition: opacity 0.4s;
+}
+
+.barra.nascosta { opacity: 0; pointer-events: none; }
+
+.barra-riempimento {
+  width: 0;
+  height: 100%;
+  background: var(--accento);
+  transition: width 0.2s;
+}
+
+.bottone-ar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accento);
+  color: var(--accento-testo);
+  font: inherit;
+  font-weight: 600;
+  box-shadow: var(--ombra);
+  cursor: pointer;
+}
+
+/* ---------- Barra delle viste ---------- */
+
+.comandi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.comandi button {
+  padding: 8px 14px;
+  border: 1px solid var(--bordo);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--testo);
+  font: inherit;
+  cursor: pointer;
+}
+
+.comandi button[aria-pressed="true"] {
+  background: var(--accento);
+  border-color: var(--accento);
+  color: var(--accento-testo);
+}
+
+.comandi .opzioni {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.comandi label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--testo-tenue);
+  cursor: pointer;
+}
+
+.comandi label[hidden] { display: none; }
+
+.comandi select {
+  padding: 6px 8px;
+  border: 1px solid var(--bordo);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--testo);
+  font: inherit;
+}
+
+/* ---------- Note (hotspot) ---------- */
+
+.nota {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform: translate(-14px, -14px);
+  transform-origin: 14px 14px;
+}
+
+.nota.dietro { opacity: 0.35; }
+
+.nota-numero {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--accento);
+  color: var(--accento-testo);
+  font: 600 14px/1 system-ui, sans-serif;
+  box-shadow: var(--ombra);
+}
+
+.nota-testo {
+  display: none;
+  max-width: 220px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--testo);
+  font: 14px/1.35 system-ui, sans-serif;
+  text-align: left;
+  box-shadow: var(--ombra);
+}
+
+.nota:hover .nota-testo,
+.nota:focus-visible .nota-testo,
+.nota.aperta .nota-testo { display: block; }
+
+.note {
+  margin-top: 20px;
+}
+
+.note h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.note ol {
+  margin: 0;
+  padding-left: 1.5em;
+}
+
+.note li button {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--testo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.note li button:hover,
+.note li button.attiva { color: var(--accento); text-decoration: underline; }
+
+/* ---------- Quote ---------- */
+
+.linee-quote {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.linee-quote line {
+  stroke: var(--quota);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.quota-punto {
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.quota-etichetta {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--quota);
+  color: #fff;
+  font: 600 13px/1.4 system-ui, sans-serif;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.quota-etichetta.quota-verticale { transform: translate(6px, -50%); }
+
+model-viewer.senza-quote .linee-quote,
+model-viewer.senza-quote .quota-etichetta { display: none; }
+
+/* ---------- Avvisi ---------- */
+
+.avviso {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--testo);
+  color: var(--sfondo);
+  box-shadow: var(--ombra);
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.avviso.visibile {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---------- Indice ---------- */
+
+.elenco-mobili {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.elenco-mobili a {
+  display: block;
+  padding: 16px;
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  background: var(--superficie);
+  color: var(--testo);
+  text-decoration: none;
+}
+
+.elenco-mobili a:hover { border-color: var(--accento); }
+
+.elenco-mobili span {
+  display: block;
+  color: var(--testo-tenue);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  model-viewer { height: 62vh; }
+  .comandi .opzioni { margin-left: 0; }
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Scrivania matrimoniale</title>
+  <link rel="stylesheet" href="../assets/viewer.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.2.0/dist/model-viewer.min.js"></script>
+</head>
+<body>
+  <header class="testata">
+    <h1>Scrivania matrimoniale</h1>
+    <p class="ingombro" id="ingombro">Ingombro: calcolo in corso…</p>
+  </header>
+
+  <main class="contenitore">
+    <model-viewer
+      id="mv"
+      src="scrivania-web.glb"
+      alt="Modello 3D della scrivania matrimoniale"
+      camera-controls
+      touch-action="pan-y"
+      camera-orbit="35deg 65deg 125%"
+      min-camera-orbit="auto 0deg 0.3m"
+      max-camera-orbit="auto auto 300%"
+      field-of-view="30deg"
+      interpolation-decay="120"
+      environment-image="neutral"
+      shadow-intensity="1"
+      exposure="1"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      ar-scale="fixed"
+      ar-placement="floor">
+
+      <div slot="progress-bar" class="barra"><div class="barra-riempimento"></div></div>
+      <button slot="ar-button" class="bottone-ar">Vedi nella stanza</button>
+
+      <svg class="linee-quote" aria-hidden="true">
+        <line data-quota="l"></line>
+        <line data-quota="p"></line>
+        <line data-quota="h"></line>
+      </svg>
+    </model-viewer>
+
+    <div class="comandi">
+      <button type="button" data-vista="fronte" aria-pressed="false">Fronte</button>
+      <button type="button" data-vista="lato" aria-pressed="false">Lato</button>
+      <button type="button" data-vista="pianta" aria-pressed="false">Pianta</button>
+      <button type="button" data-vista="prospettiva" aria-pressed="true">Prospettiva</button>
+      <div class="opzioni">
+        <label hidden>Stanza
+          <select id="modo-stanza">
+            <option value="trasparente" selected>trasparente</option>
+            <option value="piena">piena</option>
+            <option value="nascosta">nascosta</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="mostra-quote" checked> Quote</label>
+      </div>
+    </div>
+
+    <section class="note">
+      <h2>Note</h2>
+      <ol id="elenco-note"></ol>
+    </section>
+  </main>
+
+  <script>
+    // Da che parte guarda il fronte del mobile negli assi del modello: "+z" (predefinito,
+    // = vista Fronte di SketchUp), "+x", "-z" o "-x". Regola viste e quote L/P.
+    window.FRONTE = "+x";
+
+    // Note cliccabili sul modello.
+    // Per aggiungerne una: apri la pagina con ?autore in fondo all'indirizzo,
+    // orienta la vista come vuoi che la veda il falegname, fai doppio clic sul punto
+    // e incolla qui la riga copiata, sostituendo "…" con il testo della nota.
+    window.NOTE = [
+      // { testo: "Cassetto centrale con guide push-pull", position: "0.000m 0.700m 0.300m", normal: "0.000 0.000 1.000", orbit: "20deg 75deg 1.20m" },
+    ];
+  </script>
+  <script type="module" src="../assets/viewer.js"></script>
+</body>
+</html>
