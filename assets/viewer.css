@@ -110,6 +110,26 @@ model-viewer {
   cursor: pointer;
 }
 
+/* ---------- Schermo intero ---------- */
+/* Regole separate: un selettore non riconosciuto in un elenco annullerebbe tutta la regola. */
+
+.area:fullscreen {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--sfondo);
+}
+
+.area:-webkit-full-screen {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--sfondo);
+}
+
+.area:fullscreen model-viewer { flex: 1; height: auto; min-height: 0; }
+.area:-webkit-full-screen model-viewer { flex: 1; height: auto; min-height: 0; }
+
 /* ---------- Barra delle viste ---------- */
 
 .comandi {

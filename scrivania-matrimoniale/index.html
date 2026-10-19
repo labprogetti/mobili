@@ -15,6 +15,7 @@
   </header>
 
   <main class="contenitore">
+    <div class="area" id="area">
     <model-viewer
       id="mv"
       src="scrivania-web.glb"
@@ -51,6 +52,7 @@
       <button type="button" data-vista="prospettiva" aria-pressed="true">Prospettiva</button>
       <button type="button" id="apri-ante" hidden>Apri anta</button>
       <button type="button" id="apri-cassetti" hidden>Apri cassetti</button>
+      <button type="button" id="schermo-intero" hidden>Schermo intero</button>
       <div class="opzioni">
         <label hidden>Stanza
           <select id="modo-stanza">
@@ -61,6 +63,7 @@
         </label>
         <label><input type="checkbox" id="mostra-quote" checked> Quote</label>
       </div>
+    </div>
     </div>
 
     <section class="note">
@@ -82,8 +85,13 @@
 
     // Parti che si aprono: nomi dei gruppi di SketchUp. Cerniera vista da chi sta davanti all'anta.
     window.ANIMAZIONI = {
-      ante: [{ nome: "Anta", cerniera: "dx", angolo: 95 }],
-      cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22 }, // dal basso verso l'alto
+      ante: [
+        { nome: "Anta", cerniera: "dx", angolo: 95 },     // colonna
+        { nome: "Anta1", cerniera: "alto", angolo: 90 },  // pensile, a ribalta
+        { nome: "Anta2", cerniera: "alto", angolo: 90 },  // pensile, a ribalta
+      ],
+      // dal basso verso l'alto; escono dall'apertura dell'anta della colonna
+      cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22, anta: "Anta" },
     };
 
     // Note cliccabili sul modello.

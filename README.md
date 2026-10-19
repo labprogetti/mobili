@@ -84,18 +84,25 @@ frontale insieme), con un nome. Nella pagina del mobile:
 
 ```
 window.ANIMAZIONI = {
-  ante: [{ nome: "Anta", cerniera: "dx", angolo: 95 }],
-  cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22 },
+  ante: [
+    { nome: "Anta", cerniera: "dx", angolo: 95 },
+    { nome: "Anta1", cerniera: "alto", angolo: 90 },
+  ],
+  cassetti: { nomi: ["c3", "c2", "c1"], verso: "-z", corsa: 0.22, anta: "Anta" },
 };
 ```
 
-- `cerniera`: lato della cerniera visto da chi sta davanti all'anta (`"sx"` o `"dx"`);
-  l'anta si apre sempre verso l'esterno del mobile.
+- `cerniera`: `"sx"` o `"dx"` (lato visto da chi sta davanti all'anta), oppure `"alto"`
+  (anta a ribalta verso l'alto) o `"basso"`. L'anta si apre sempre verso l'esterno.
 - `cassetti.nomi`: nell'ordine in cui escono; `verso`: asse lungo cui scorrono
-  (`"+x"`, `"-x"`, `"+z"`, `"-z"`); `corsa`: quanto escono, in metri.
+  (`"+x"`, `"-x"`, `"+z"`, `"-z"`); `corsa`: quanto escono, in metri; `anta`: quella
+  davanti ai cassetti, che si apre prima di loro.
+- I nomi valgono anche con il suffisso che Blender aggiunge (`Anta.001`, `c1.002`…).
 
-Compaiono i bottoni "Apri anta" / "Apri cassetti". Aprendo i cassetti si apre prima l'anta;
-chiudendo l'anta si chiudono prima i cassetti. In AR il mobile resta com'è in quel momento.
+Compaiono i bottoni "Apri ante" / "Apri cassetti". Chiudendo le ante si chiudono prima i
+cassetti. In AR il mobile resta com'è in quel momento.
+
+Il bottone "Schermo intero" compare dove il browser lo consente (non su iPhone).
 
 ## Quote disegnate a mano
 
