@@ -134,12 +134,14 @@ bottoneAR?.addEventListener('click', () => {
   if (!stanza) return;
   stanzaNascostaPerAR = true;
   mostraStanza('nascosta');
+  mv.shadowIntensity = 1; // nella stanza vera serve l'ombra che "appoggia" il mobile a terra
 });
 
 function ripristinaDopoAR() {
   if (!stanzaNascostaPerAR) return;
   stanzaNascostaPerAR = false;
   mostraStanza(sceltaStanza?.value || 'trasparente');
+  mv.shadowIntensity = 0;
 }
 
 mv.addEventListener('ar-status', (e) => {
@@ -442,6 +444,9 @@ mv.addEventListener('load', () => {
     mv.setAttribute('ar-modes', 'webxr quick-look');
     // Sotto il pavimento non c'è niente da vedere.
     mv.maxCameraOrbit = 'auto 90deg 300%';
+    // L'ombra automatica di model-viewer cade alla quota del pavimento della stanza:
+    // le due superfici coincidono e il pavimento si riempie di strisce. C'è già il pavimento.
+    mv.shadowIntensity = 0;
   }
 
   if (typeof window.INGOMBRO === 'string') {
